@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logo Similarity Viewer</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'NB Architekt';
+            src: url('/static/fonts/NB-Architekt-R-Regular.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        html, body {
+            height: 100%;
+            width: 100%;
+        }
+        body {
+            font-family: 'NB Architekt', Arial, sans-serif;
+            background: #111;
+            color: #111;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+        }
+        .header {
+            width: 100vw;
+            background: #111;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 2rem 0.75rem 2rem;
+            font-size: 1.25rem;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid #222;
+        }
+        .header .app-title {
+            font-weight: bold;
+            font-size: 1.3rem;
+            letter-spacing: 0.1em;
+        }
+        .header .letter-row {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            align-items: center;
+            flex: 1;
+        }
+        .header .letter-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.1rem;
+            font-family: inherit;
+            cursor: pointer;
+            padding: 0.15rem 0.5rem;
+            border-radius: 0.2rem;
+            transition: background 0.15s, color 0.15s;
+        }
+        .header .letter-btn:hover, .header .letter-btn.active {
+            background: #ff5c1a;
+            color: #fff;
+        }
+        .header .back-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            margin-right: 1.5rem;
+            padding: 0.1rem 0.5rem 0.1rem 0;
+            transition: color 0.15s;
+        }
+        .header .back-arrow:hover {
+            color: #ff5c1a;
+        }
+        .main-container {
+            width: 100vw;
+            min-height: 0;
+            height: 100%;
+            background: #111;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 5.5rem;
+        }
+        .compare-area-centerer {
+            height: calc(100vh - 56px - 120px);
+            width: 100vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .compare-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #111;
+            min-width: 0;
+            position: relative;
+        }
+        .logo-compare-row {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 5vw;
+            margin-bottom: 0.5rem;
+            position: relative;
+        }
+        .logo-compare-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            position: relative;
+        }
+        .logo-label, .similarity-label, .similarity-score-large {
+            position: absolute;
+            left: 0;
+            right: 0;
+        }
+        .logo-label {
+            color: #fff;
+            font-size: 1.2rem;
+            text-align: center;
+            bottom: -2.2em;
+            letter-spacing: 0.04em;
+            min-height: 1.5em;
+        }
+        .similarity-label {
+            color: #ff5c1a;
+            font-size: 1.1rem;
+            text-align: center;
+            bottom: -2.2em;
+            letter-spacing: 0.04em;
+            min-height: 1.5em;
+        }
+        .similarity-score-large {
+            color: #ff5c1a;
+            font-size: 1.7rem;
+            font-weight: bold;
+            text-align: center;
+            bottom: -3.5em;
+            min-height: 1.5em;
+        }
+        .compare-logo {
+            width: 28vw;
+            height: 28vw;
+            max-width: 340px;
+            max-height: 340px;
+            object-fit: contain;
+            background: #fff;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+        }
+        .side-panel {
+            flex: 1;
+            background: #e5e5e5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1.5rem;
+            min-width: 320px;
+            box-shadow: -2px 0 8px rgba(0,0,0,0.04);
+            position: relative;
+            height: 100%;
+        }
+        .side-panel h2 {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            color: #ff5c1a;
+        }
+        .nav-bar-container {
+            flex-shrink: 0;
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            pointer-events: none;
+            height: 120px;
+        }
+        .export-btn-row {
+            pointer-events: auto;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 150px;
+            z-index: 20;
+        }
+        #exportPngBtn {
+            background: #ff5c1a;
+            color: #fff;
+            border: none;
+            padding: 0.35rem 1.1rem;
+            border-radius: 0.3rem;
+            font-size: 0.98rem;
+            cursor: pointer;
+            box-shadow: 0 2px 8px #0005;
+            letter-spacing: 0.04em;
+            min-width: 120px;
+            min-height: 32px;
+            max-width: 200px;
+            max-height: 40px;
+            height: auto;
+            width: auto;
+            position: relative;
+            z-index: 21;
+            display: inline-block;
+        }
+        .thumbnail-bar {
+            pointer-events: auto;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            background: rgba(20,20,20,0.97);
+            border-radius: 2.5rem;
+            padding: 1.2rem 3.5rem;
+            box-shadow: 0 2px 32px #000a;
+            min-width: 600px;
+            min-height: 90px;
+            font-size: 1.5rem;
+            gap: 1.2rem;
+        }
+        .thumbnail-arrow {
+            background: none;
+            border: none;
+            color: #ff5c1a;
+            font-size: 3.5rem;
+            cursor: pointer;
+            padding: 0.1rem 1.2rem;
+            border-radius: 0.5rem;
+            transition: background 0.15s, color 0.15s;
+        }
+        .thumbnail-arrow:disabled {
+            color: #ccc;
+            cursor: not-allowed;
+        }
+        .thumbnail-arrow:hover:not(:disabled) {
+            background: #ff5c1a22;
+        }
+        .thumbnail {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+            background: #fff;
+            border-radius: 0.3rem;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: border 0.15s;
+        }
+        .thumbnail.selected {
+            border: 2px solid #ff5c1a;
+        }
+        .logo-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            background: #111;
+        }
+        .logo-item {
+            cursor: pointer;
+            background: #fff;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            padding: 1rem;
+            transition: box-shadow 0.2s, transform 0.2s, background 0.2s, border 0.2s;
+            border: 2px solid transparent;
+        }
+        .logo-item.selected {
+            box-shadow: 0 4px 24px #ff5c1a44;
+            transform: scale(1.04);
+            border: 2px solid #ff5c1a;
+        }
+        .logo-item:hover {
+            background: #ff5c1a;
+            border: 2px solid #ff5c1a;
+            box-shadow: 0 4px 24px #ff5c1a88;
+            transform: scale(1.04);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .side-panel .arrow-row {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+        .side-panel .nav-arrow {
+            background: none;
+            border: none;
+            color: #ff5c1a;
+            font-size: 3.5rem;
+            cursor: pointer;
+            padding: 0.2rem 1.5rem;
+            border-radius: 0.3rem;
+            transition: background 0.15s, color 0.15s;
+        }
+        .side-panel .nav-arrow:disabled {
+            color: #ccc;
+            cursor: not-allowed;
+        }
+        .side-panel .nav-arrow:hover:not(:disabled) {
+            background: #ff5c1a22;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 24px;
+        }
+        .switch input {display:none;}
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #444;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #fff;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #ff5c1a;
+        }
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button class="back-arrow" id="backArrow" style="display:none;" title="Back to all logos">&#8592;</button>
+        <span class="app-title">LogoCluster</span>
+        <div class="letter-row">
+            <button class="letter-btn" type="button">A</button>
+            <button class="letter-btn" type="button">B</button>
+            <button class="letter-btn" type="button">C</button>
+            <button class="letter-btn" type="button">D</button>
+            <button class="letter-btn" type="button">E</button>
+            <button class="letter-btn" type="button">F</button>
+            <button class="letter-btn" type="button">G</button>
+            <button class="letter-btn" type="button">H</button>
+            <button class="letter-btn" type="button">I</button>
+            <button class="letter-btn" type="button">J</button>
+            <button class="letter-btn" type="button">K</button>
+            <button class="letter-btn" type="button">L</button>
+            <button class="letter-btn" type="button">M</button>
+            <button class="letter-btn" type="button">N</button>
+            <button class="letter-btn" type="button">O</button>
+            <button class="letter-btn" type="button">P</button>
+            <button class="letter-btn" type="button">Q</button>
+            <button class="letter-btn" type="button">R</button>
+            <button class="letter-btn" type="button">S</button>
+            <button class="letter-btn" type="button">T</button>
+            <button class="letter-btn" type="button">U</button>
+            <button class="letter-btn" type="button">V</button>
+            <button class="letter-btn" type="button">W</button>
+            <button class="letter-btn" type="button">X</button>
+            <button class="letter-btn" type="button">Y</button>
+            <button class="letter-btn" type="button">Z</button>
+        </div>
+        <div class="mode-toggle" style="margin-left:2rem;display:flex;align-items:center;gap:0.5rem;">
+            <span id="exploreLabel" style="color:#fff;font-weight:bold;">Explore</span>
+            <label class="switch">
+                <input type="checkbox" id="modeSwitch">
+                <span class="slider round"></span>
+            </label>
+            <span id="selectLabel" style="color:#fff;">Select</span>
+        </div>
+        <img src="/static/Group5076.svg" alt="Brand Icon" style="height: 1.3rem; width: auto; margin-left: 2rem; vertical-align: middle;" />
+    </div>
+    <div id="exportSelectedContainer" style="display:none; width:100vw; justify-content:center; align-items:center; margin: 2.5rem 0 1.5rem 0;">
+        <button id="exportSelectedBtn" style="background:#ff5c1a;color:#fff;border:none;padding:0.35rem 1.1rem;border-radius:0.3rem;font-size:0.98rem;cursor:pointer;box-shadow:0 2px 8px #0005;letter-spacing:0.04em;min-width:120px;min-height:32px;max-width:200px;max-height:40px;height:auto;width:auto;display:block;">EXPORT SELECTED</button>
+    </div>
+    <div class="logo-grid" id="logoGrid"></div>
+    <div class="main-container" id="mainContainer" style="display:none;">
+        <div class="compare-area-centerer">
+            <div class="compare-area">
+                <div class="logo-compare-row">
+                    <div class="logo-compare-col" style="margin-right:3vw;">
+                        <img id="mainLogoImg" class="compare-logo" src="" alt="Main Logo">
+                        <div class="logo-label">Original Logo</div>
+                    </div>
+                    <div class="logo-compare-col">
+                        <img id="similarLogoImg" class="compare-logo" src="" alt="Similar Logo">
+                        <div class="similarity-label">Similarity</div>
+                        <div class="similarity-score-large" id="similarityScore"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="nav-bar-container">
+            <div class="export-btn-row">
+                <button id="exportPngBtn">Export as PNG</button>
+            </div>
+            <div class="thumbnail-bar" id="thumbnailBar"></div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="similar-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Similar Logos</h2>
+            <div id="modal-similar-logos"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script>
+        let allLogos = [];
+        let selectedLogo = null;
+        let similarPairsGlobal = [];
+        let similarIndex = 0;
+        let thumbPage = 0;
+        const THUMB_PAGE_SIZE = 5;
+        let selectedThumbnails = [];
+        let currentSet = 'A';  // Default to set A
+        let mode = 'explore';
+        const modeSwitch = document.getElementById('modeSwitch');
+        let selectedGridLogos = [];
+        modeSwitch.addEventListener('change', function() {
+            mode = this.checked ? 'select' : 'explore';
+            document.getElementById('exploreLabel').style.fontWeight = mode === 'explore' ? 'bold' : 'normal';
+            document.getElementById('selectLabel').style.fontWeight = mode === 'select' ? 'bold' : 'normal';
+            selectedGridLogos = [];
+            renderLogoGrid();
+            // For now, just log the mode
+            console.log('Mode switched to:', mode);
+        });
+
+        function loadLogos(setType) {
+            currentSet = setType;
+            fetch(`/api/logos?set=${setType}`)
+                .then(response => response.json())
+                .then(logos => {
+                    allLogos = logos;
+                    renderLogoGrid();
+                });
+        }
+
+        function renderLogoGrid() {
+            const logoGrid = document.getElementById('logoGrid');
+            logoGrid.innerHTML = '';
+            
+            // If no logos are selected, show normal grid
+            if (selectedGridLogos.length === 0) {
+                renderLogosInGrid(allLogos);
+                return;
+            }
+            
+            // In select mode with selected logos, reorder the grid
+            const selectedLogo = selectedGridLogos[0];
+            // Get similar logos for the selected logo
+            fetch(`/api/similar/${encodeURIComponent(selectedLogo)}?set=${currentSet}`)
+                .then(response => response.json())
+                .then(similarPairs => {
+                    // Create a map of logo to similarity score
+                    const similarityMap = new Map();
+                    similarPairs.forEach(([path, score]) => {
+                        similarityMap.set(path, score);
+                    });
+                    
+                    // Sort remaining logos by similarity score
+                    const remainingLogos = allLogos.filter(logo => 
+                        logo !== selectedLogo && !selectedGridLogos.includes(logo)
+                    );
+                    remainingLogos.sort((a, b) => {
+                        const scoreA = similarityMap.get(a) || 0;
+                        const scoreB = similarityMap.get(b) || 0;
+                        return scoreB - scoreA;
+                    });
+                    
+                    // Combine selected logos with their similar logos
+                    const logosToRender = [...selectedGridLogos, ...remainingLogos];
+                    renderLogosInGrid(logosToRender);
+                });
+        }
+
+        function renderLogosInGrid(logos) {
+            const logoGrid = document.getElementById('logoGrid');
+            logoGrid.innerHTML = '';
+            
+            logos.forEach(logo => {
+                const div = document.createElement('div');
+                div.className = 'logo-item';
+                if (selectedGridLogos.includes(logo)) {
+                    div.classList.add('selected');
+                }
+                
+                // Checkbox for select mode
+                let checkbox = null;
+                if (mode === 'select') {
+                    div.style.position = 'relative';
+                    checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'grid-checkbox';
+                    checkbox.style.position = 'absolute';
+                    checkbox.style.top = '8px';
+                    checkbox.style.right = '8px';
+                    checkbox.style.zIndex = '2';
+                    checkbox.checked = selectedGridLogos.includes(logo);
+                    checkbox.onclick = (e) => {
+                        e.stopPropagation();
+                        const wasFirst = selectedGridLogos[0];
+                        if (checkbox.checked) {
+                            if (!selectedGridLogos.includes(logo)) {
+                                selectedGridLogos.push(logo);
+                            }
+                        } else {
+                            selectedGridLogos = selectedGridLogos.filter(l => l !== logo);
+                        }
+                        // If first selected logo changed or no logos left, re-render grid
+                        if (selectedGridLogos[0] !== wasFirst || selectedGridLogos.length === 0) {
+                            renderLogoGrid();
+                        } else {
+                            // Just update this tile
+                            updateTileSelection(div, logo);
+                        }
+                    };
+                    div.appendChild(checkbox);
+                }
+                // Logo image
+                const img = document.createElement('img');
+                img.src = `/logos/${logo}`;
+                img.alt = logo;
+                img.style.width = '96px';
+                img.style.height = '96px';
+                img.style.objectFit = 'contain';
+                div.appendChild(img);
+                
+                if (mode === 'explore') {
+                    div.onclick = () => showLogoView(logo, div);
+                } else {
+                    // In select mode, clicking the logo toggles the checkbox and selection
+                    div.onclick = (e) => {
+                        const wasFirst = selectedGridLogos[0];
+                        const idx = selectedGridLogos.indexOf(logo);
+                        if (idx === -1) {
+                            selectedGridLogos.push(logo);
+                            if (checkbox) checkbox.checked = true;
+                        } else {
+                            selectedGridLogos.splice(idx, 1);
+                            if (checkbox) checkbox.checked = false;
+                        }
+                        if (selectedGridLogos[0] !== wasFirst || selectedGridLogos.length === 0) {
+                            renderLogoGrid();
+                        } else {
+                            updateTileSelection(div, logo);
+                        }
+                    };
+                }
+                logoGrid.appendChild(div);
+            });
+        }
+
+        // Helper to update only the tile's selection state
+        function updateTileSelection(div, logo) {
+            if (selectedGridLogos.includes(logo)) {
+                div.classList.add('selected');
+                const checkbox = div.querySelector('.grid-checkbox');
+                if (checkbox) checkbox.checked = true;
+            } else {
+                div.classList.remove('selected');
+                const checkbox = div.querySelector('.grid-checkbox');
+                if (checkbox) checkbox.checked = false;
+            }
+        }
+
+        function showLogoView(logo, element) {
+            selectedLogo = logo;
+            element.classList.add('selected');
+            document.getElementById('logoGrid').style.display = 'none';
+            document.getElementById('mainContainer').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            updateBackArrow();
+            // Set main logo
+            document.getElementById('mainLogoImg').src = `/logos/${logo}`;
+            // Load similar logos
+            fetch(`/api/similar/${encodeURIComponent(logo)}?set=${currentSet}`)
+                .then(response => response.json())
+                .then(similarPairs => {
+                    // Deduplicate by logo path
+                    const seen = new Set();
+                    similarPairsGlobal = similarPairs.filter(([path, score]) => {
+                        if (seen.has(path) || path === selectedLogo) return false;
+                        seen.add(path);
+                        return true;
+                    });
+                    similarIndex = 0;
+                    thumbPage = 0;
+                    renderCompareView();
+                });
+        }
+
+        function renderCompareView() {
+            // Set similar logo
+            const similarLogoImg = document.getElementById('similarLogoImg');
+            const similarityScore = document.getElementById('similarityScore');
+            const compareRow = document.querySelector('.logo-compare-row');
+            compareRow.innerHTML = '';
+            // Build list: [original logo] + [locked logos] + [highlighted logo if not locked]
+            const locked = selectedThumbnails.slice();
+            let showIndex = similarIndex;
+            const lockedSet = new Set(locked);
+            let displayIndices = locked.slice();
+            if (!lockedSet.has(showIndex)) {
+                displayIndices.push(showIndex);
+            }
+            // Determine logo and font size based on number of logos
+            const logoCount = displayIndices.length;
+            let logoSize, maxLogoSize, labelFontSize, scoreFontSize;
+            if (logoCount === 1) {
+                logoSize = '28vw'; maxLogoSize = '340px'; labelFontSize = '1.2rem'; scoreFontSize = '1.7rem';
+            } else if (logoCount === 2) {
+                logoSize = '22vw'; maxLogoSize = '260px'; labelFontSize = '1.1rem'; scoreFontSize = '1.4rem';
+            } else if (logoCount === 3) {
+                logoSize = '18vw'; maxLogoSize = '200px'; labelFontSize = '1.0rem'; scoreFontSize = '1.1rem';
+            } else if (logoCount === 4) {
+                logoSize = '14vw'; maxLogoSize = '160px'; labelFontSize = '0.95rem'; scoreFontSize = '0.95rem';
+            } else {
+                logoSize = '10vw'; maxLogoSize = '120px'; labelFontSize = '0.85rem'; scoreFontSize = '0.85rem';
+            }
+            // Always show original logo first
+            const origCol = document.createElement('div');
+            origCol.className = 'logo-compare-col';
+            origCol.style.marginRight = '3vw';
+            const origImg = document.createElement('img');
+            origImg.id = 'mainLogoImg';
+            origImg.className = 'compare-logo';
+            origImg.src = `/logos/${selectedLogo}`;
+            origImg.alt = 'Main Logo';
+            origImg.style.width = logoSize;
+            origImg.style.height = logoSize;
+            origImg.style.maxWidth = maxLogoSize;
+            origImg.style.maxHeight = maxLogoSize;
+            origCol.appendChild(origImg);
+            const origLabel = document.createElement('div');
+            origLabel.className = 'logo-label';
+            origLabel.textContent = 'Original Logo';
+            origLabel.style.fontSize = labelFontSize;
+            origCol.appendChild(origLabel);
+            compareRow.appendChild(origCol);
+            // Show locked and/or highlighted similar logos
+            displayIndices.forEach((idx, i) => {
+                const [logoPath, score] = similarPairsGlobal[idx];
+                const col = document.createElement('div');
+                col.className = 'logo-compare-col';
+                col.style.position = 'relative';
+                // Large logo
+                const img = document.createElement('img');
+                img.className = 'compare-logo';
+                img.src = `/logos/${logoPath}`;
+                img.alt = 'Similar Logo';
+                img.style.width = logoSize;
+                img.style.height = logoSize;
+                img.style.maxWidth = maxLogoSize;
+                img.style.maxHeight = maxLogoSize;
+                col.appendChild(img);
+                // Checkbox on large logo
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.style.position = 'absolute';
+                checkbox.style.top = '10px';
+                checkbox.style.right = '10px';
+                checkbox.style.zIndex = '2';
+                checkbox.style.width = '20px';
+                checkbox.style.height = '20px';
+                checkbox.checked = selectedThumbnails.includes(idx);
+                checkbox.onclick = (e) => {
+                    e.stopPropagation();
+                    if (checkbox.checked) {
+                        if (selectedThumbnails.length < 5) {
+                            selectedThumbnails.push(idx);
+                        } else {
+                            checkbox.checked = false;
+                        }
+                    } else {
+                        selectedThumbnails = selectedThumbnails.filter(id => id !== idx);
+                    }
+                    renderCompareView();
+                };
+                col.appendChild(checkbox);
+                // Labels
+                const simLabel = document.createElement('div');
+                simLabel.className = 'similarity-label';
+                simLabel.textContent = 'Similarity';
+                simLabel.style.fontSize = labelFontSize;
+                col.appendChild(simLabel);
+                const simScore = document.createElement('div');
+                simScore.className = 'similarity-score-large';
+                simScore.textContent = `SSIM: ${score.toFixed(3)}`;
+                simScore.style.fontSize = scoreFontSize;
+                col.appendChild(simScore);
+                compareRow.appendChild(col);
+            });
+            // Hide single similar logo image/score if multi selected
+            if (displayIndices.length > 0 && similarPairsGlobal.length > 0) {
+                const [logoPath, score] = similarPairsGlobal[similarIndex];
+                if (similarLogoImg && similarityScore) {
+                    similarLogoImg.src = `/logos/${logoPath}`;
+                    similarityScore.textContent = `SSIM: ${score.toFixed(3)}`;
+                }
+            } else {
+                if (similarLogoImg && similarityScore) {
+                    similarLogoImg.src = '';
+                    similarityScore.textContent = '';
+                }
+            }
+            // Thumbnails
+            const thumbnailBar = document.getElementById('thumbnailBar');
+            thumbnailBar.innerHTML = '';
+            const start = thumbPage * THUMB_PAGE_SIZE;
+            const end = Math.min(start + THUMB_PAGE_SIZE, similarPairsGlobal.length);
+            // Left arrow
+            const leftArrow = document.createElement('button');
+            leftArrow.className = 'thumbnail-arrow';
+            leftArrow.innerHTML = '&#8592;';
+            leftArrow.disabled = thumbPage === 0;
+            leftArrow.onclick = function() {
+                if (thumbPage > 0) {
+                    thumbPage--;
+                    renderCompareView();
+                }
+            };
+            thumbnailBar.appendChild(leftArrow);
+            // Thumbnails
+            for (let i = start; i < end; i++) {
+                const [logoPath, score] = similarPairsGlobal[i];
+                const thumbWrapper = document.createElement('div');
+                thumbWrapper.style.position = 'relative';
+                thumbWrapper.style.display = 'inline-block';
+                const thumb = document.createElement('img');
+                thumb.src = `/logos/${logoPath}`;
+                thumb.alt = logoPath;
+                thumb.className = 'thumbnail' + (i === similarIndex ? ' selected' : '');
+                thumb.onclick = () => {
+                    similarIndex = i;
+                    renderCompareView();
+                };
+                // Checkbox
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.style.position = 'absolute';
+                checkbox.style.top = '2px';
+                checkbox.style.right = '2px';
+                checkbox.style.zIndex = '2';
+                checkbox.style.width = '16px';
+                checkbox.style.height = '16px';
+                checkbox.checked = selectedThumbnails.includes(i);
+                checkbox.onclick = (e) => {
+                    e.stopPropagation();
+                    if (checkbox.checked) {
+                        if (selectedThumbnails.length < 5) {
+                            selectedThumbnails.push(i);
+                        } else {
+                            checkbox.checked = false;
+                        }
+                    } else {
+                        selectedThumbnails = selectedThumbnails.filter(idx => idx !== i);
+                    }
+                    renderCompareView();
+                };
+                thumbWrapper.appendChild(thumb);
+                thumbWrapper.appendChild(checkbox);
+                thumbnailBar.appendChild(thumbWrapper);
+            }
+            // Fill empty slots for alignment
+            for (let i = end; i < start + THUMB_PAGE_SIZE; i++) {
+                const empty = document.createElement('div');
+                empty.className = 'thumbnail';
+                empty.style.visibility = 'hidden';
+                thumbnailBar.appendChild(empty);
+            }
+            // Right arrow
+            const rightArrow = document.createElement('button');
+            rightArrow.className = 'thumbnail-arrow';
+            rightArrow.innerHTML = '&#8594;';
+            rightArrow.disabled = end >= similarPairsGlobal.length;
+            rightArrow.onclick = function() {
+                console.log('Right arrow clicked');
+                console.log('Current thumbPage:', thumbPage);
+                console.log('Current end:', end);
+                console.log('similarPairsGlobal.length:', similarPairsGlobal.length);
+                if (end < similarPairsGlobal.length) {
+                    thumbPage++;
+                    console.log('Incrementing thumbPage to:', thumbPage);
+                    renderCompareView();
+                } else {
+                    console.log('Arrow disabled - end >= similarPairsGlobal.length');
+                }
+            };
+            thumbnailBar.appendChild(rightArrow);
+            // Always allow navigation arrows to work, even if logos are selected
+            leftArrow.disabled = thumbPage === 0;
+            rightArrow.disabled = end >= similarPairsGlobal.length;
+        }
+
+        const modal = document.getElementById('similar-modal');
+        const modalSimilarLogos = document.getElementById('modal-similar-logos');
+        const closeBtn = document.getElementsByClassName('close')[0];
+
+        // Modal functionality
+        closeBtn.onclick = function() {
+            modal.style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Show/hide back arrow depending on view
+        function updateBackArrow() {
+            const backArrow = document.getElementById('backArrow');
+            const mainContainer = document.getElementById('mainContainer');
+            if (mainContainer.style.display === 'flex') {
+                backArrow.style.display = '';
+            } else {
+                backArrow.style.display = 'none';
+            }
+        }
+
+        document.getElementById('backArrow').onclick = function() {
+            // Reset all selections and state
+            selectedLogo = null;
+            similarPairsGlobal = [];
+            similarIndex = 0;
+            thumbPage = 0;
+            selectedThumbnails = [];
+            document.getElementById('mainContainer').style.display = 'none';
+            document.getElementById('logoGrid').style.display = '';
+            document.body.style.overflow = 'auto';
+            updateBackArrow();
+        };
+
+        // Initial state
+        updateBackArrow();
+
+        // Keyboard navigation for logo comparison
+        document.addEventListener('keydown', function(e) {
+            if (document.getElementById('mainContainer').style.display !== 'none') {
+                if (e.key === 'ArrowLeft') {
+                    if (similarIndex > 0) {
+                        similarIndex--;
+                        if (similarIndex < thumbPage * THUMB_PAGE_SIZE) {
+                            thumbPage = Math.floor(similarIndex / THUMB_PAGE_SIZE);
+                        }
+                        renderCompareView();
+                    }
+                } else if (e.key === 'ArrowRight') {
+                    if (similarIndex < similarPairsGlobal.length - 1) {
+                        similarIndex++;
+                        if (similarIndex >= (thumbPage + 1) * THUMB_PAGE_SIZE) {
+                            thumbPage = Math.floor(similarIndex / THUMB_PAGE_SIZE);
+                        }
+                        renderCompareView();
+                    }
+                } else if (e.key === ' ') {
+                    // Spacebar: toggle selection of current similarIndex
+                    e.preventDefault();
+                    const idx = similarIndex;
+                    const selectedIdx = selectedThumbnails.indexOf(idx);
+                    if (selectedIdx === -1) {
+                        if (selectedThumbnails.length < 5) {
+                            selectedThumbnails.push(idx);
+                        }
+                    } else {
+                        selectedThumbnails = selectedThumbnails.filter(i => i !== idx);
+                    }
+                    renderCompareView();
+                } else if (e.key === 'Escape') {
+                    document.getElementById('backArrow').click();
+                }
+            }
+        });
+
+        // Export as PNG logic
+        document.addEventListener('DOMContentLoaded', function() {
+            const exportBtn = document.getElementById('exportPngBtn');
+            if (exportBtn) {
+                exportBtn.onclick = exportCompareAsPng;
+            }
+        });
+
+        function exportCompareAsPng() {
+            if (!selectedLogo || !similarPairsGlobal.length) return;
+            // Gather selected similar logos (if any), else just the current similarIndex
+            let similarToExport = [];
+            if (selectedThumbnails.length > 0) {
+                similarToExport = selectedThumbnails.map(idx => {
+                    const [filename, score] = similarPairsGlobal[idx];
+                    return { filename, score };
+                });
+            } else {
+                const [filename, score] = similarPairsGlobal[similarIndex];
+                similarToExport = [{ filename, score }];
+            }
+            fetch('/api/export_png', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    main_logo: selectedLogo,
+                    similar_logos: similarToExport
+                })
+            })
+            .then(response => response.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'logos_compare.png';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+                });
+        }
+
+        // Letter filter buttons
+        document.querySelectorAll('.letter-btn').forEach(btn => {
+            btn.onclick = function() {
+                const setType = this.textContent;
+                document.querySelectorAll('.letter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                loadLogos(setType);
+            };
+        });
+
+        // Initial load
+        loadLogos('A');
+        document.querySelector('.letter-btn').classList.add('active');
+
+        // Update showExportSelectedBtn to use the new container and button
+        function showExportSelectedBtn() {
+            const container = document.getElementById('exportSelectedContainer');
+            const btn = document.getElementById('exportSelectedBtn');
+            if (mode === 'select' && selectedGridLogos.length > 0) {
+                container.style.display = 'flex';
+                btn.onclick = exportSelectedGridLogos;
+            } else {
+                container.style.display = 'none';
+            }
+        }
+
+        function exportSelectedGridLogos() {
+            if (!selectedGridLogos.length) return;
+            // Compose payload for export_png endpoint
+            const main_logo = selectedGridLogos[0];
+            const similar_logos = selectedGridLogos.slice(1).map(filename => ({ filename, score: null }));
+            fetch('/api/export_png', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ main_logo, similar_logos })
+            })
+            .then(response => response.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'logos_selected.png';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            });
+        }
+
+        // Call showExportSelectedBtn after rendering grid
+        const origRenderLogoGrid = renderLogoGrid;
+        renderLogoGrid = function() {
+            origRenderLogoGrid.apply(this, arguments);
+            showExportSelectedBtn();
+        };
+    </script>
+</body>
+</html> 
