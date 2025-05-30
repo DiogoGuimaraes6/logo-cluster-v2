@@ -53,6 +53,7 @@ Thumbs.db
 !render.yaml
 !package.json
 !package-lock.json
+!block4_similarities_pngs_*_inkscape_512.json
 
 # Keep these directories but ignore their contents
 cluster_grids*/
